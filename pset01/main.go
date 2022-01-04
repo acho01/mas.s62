@@ -21,6 +21,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -141,6 +142,15 @@ func (self Block) ToHex() string {
 	return fmt.Sprintf("%064x", self[:])
 }
 
+func (self *Block) FillWithRandom() {
+	var random_bytes [32]byte
+	_, err := rand.Read(random_bytes[:])
+	if err != nil {
+		fmt.Print("Error: ", err)
+	}
+	*self = random_bytes
+}
+
 // Hash returns the sha256 hash of the block.
 func (self Block) Hash() Block {
 	return sha256.Sum256(self[:])
@@ -220,10 +230,23 @@ func GenerateKey() (SecretKey, PublicKey, error) {
 	var sec SecretKey
 	var pub PublicKey
 
-	// Your code here
-	// ===
+	//generate random bytes for private/secret key
+	for i, _ := range sec.ZeroPre {
+		sec.ZeroPre[i].FillWithRandom()
+	}
+	for i, _ := range sec.OnePre {
+		sec.OnePre[i].FillWithRandom()
+	}
 
-	// ===
+	for i, _ := range sec.ZeroPre {
+		pub.ZeroHash[i] = sec.ZeroPre[i].Hash()
+	}
+	for i, _ := range sec.OnePre {
+		pub.OneHash[i] = sec.OnePre[i].Hash()
+	}
+
+	fmt.Println(sec.OnePre[23].Hash())
+	fmt.Println(pub.OneHash[23])
 	return sec, pub, nil
 }
 
