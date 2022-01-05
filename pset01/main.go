@@ -28,20 +28,6 @@ import (
 )
 
 func main() {
-	var my_bit uint8 = 106
-	bit_index := 0
-
-	for bit_index < 8 {
-		if my_bit&128 > 0 {
-			fmt.Printf("Bit %d is 1\n", bit_index)
-		} else {
-			fmt.Printf("Bit %d is 0\n", bit_index)
-		}
-
-		bit_index++
-		my_bit = my_bit << 1
-	}
-
 	// Define your message
 	textString := "1"
 	fmt.Printf("%s\n", textString)
@@ -124,7 +110,7 @@ func HexToPubkey(s string) (PublicKey, error) {
 	// first, make sure hex string is of correct length
 	if len(s) != expectedLength {
 		return p, fmt.Errorf(
-			"Pubkey string %d characters, expect %d", expectedLength)
+			"Pubkey string characters, expect %d", expectedLength)
 	}
 
 	// decode from hex to a byte slice
@@ -211,7 +197,7 @@ func HexToSignature(s string) (Signature, error) {
 	// first, make sure hex string is of correct length
 	if len(s) != expectedLength {
 		return sig, fmt.Errorf(
-			"Pubkey string %d characters, expect %d", expectedLength)
+			"Pubkey string characters, expect %d", expectedLength)
 	}
 
 	// decode from hex to a byte slice
@@ -258,8 +244,6 @@ func GenerateKey() (SecretKey, PublicKey, error) {
 		pub.OneHash[i] = sec.OnePre[i].Hash()
 	}
 
-	fmt.Println(sec.OnePre[23].Hash())
-	fmt.Println(pub.OneHash[23])
 	return sec, pub, nil
 }
 
@@ -273,7 +257,6 @@ func Sign(msg Message, sec SecretKey) Signature {
 	for _, v := range messageBlock {
 		bit_index := 0
 		for bit_index < 8 {
-			fmt.Println(secret_index)
 			if v&128 > 0 {
 				sig.Preimage[secret_index] = sec.OnePre[secret_index]
 			} else {
@@ -292,10 +275,30 @@ func Sign(msg Message, sec SecretKey) Signature {
 // describing the validity of the signature.
 func Verify(msg Message, pub PublicKey, sig Signature) bool {
 
-	// Your code here
-	// ===
+	messageBlock := Block(msg)
 
-	// ===
+	secret_index := 0
+
+	for _, v := range messageBlock {
+		bit_index := 0
+		for bit_index < 8 {
+			var pubBlock Block
+			sigBlock := sig.Preimage[secret_index]
+			if v&128 > 0 {
+				pubBlock = pub.OneHash[secret_index]
+			} else {
+				pubBlock = pub.ZeroHash[secret_index]
+			}
+
+			if (!sigBlock.IsPreimage(pubBlock)) {
+				return false
+			}
+
+			bit_index++
+			v = v << 1
+			secret_index++
+		}
+	}
 
 	return true
 }
