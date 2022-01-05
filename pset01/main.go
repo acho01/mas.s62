@@ -28,6 +28,19 @@ import (
 )
 
 func main() {
+	var my_bit uint8 = 106
+	bit_index := 0
+
+	for bit_index < 8 {
+		if my_bit&128 > 0 {
+			fmt.Printf("Bit %d is 1\n", bit_index)
+		} else {
+			fmt.Printf("Bit %d is 0\n", bit_index)
+		}
+
+		bit_index++
+		my_bit = my_bit << 1
+	}
 
 	// Define your message
 	textString := "1"
@@ -253,11 +266,25 @@ func GenerateKey() (SecretKey, PublicKey, error) {
 // Sign takes a message and secret key, and returns a signature.
 func Sign(msg Message, sec SecretKey) Signature {
 	var sig Signature
+	messageBlock := Block(msg)
 
-	// Your code here
-	// ===
+	secret_index := 0
 
-	// ===
+	for _, v := range messageBlock {
+		bit_index := 0
+		for bit_index < 8 {
+			fmt.Println(secret_index)
+			if v&128 > 0 {
+				sig.Preimage[secret_index] = sec.OnePre[secret_index]
+			} else {
+				sig.Preimage[secret_index] = sec.ZeroPre[secret_index]
+			}
+
+			bit_index++
+			v = v << 1
+			secret_index++
+		}
+	}
 	return sig
 }
 
