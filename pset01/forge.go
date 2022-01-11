@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 /*
 A note about the provided keys and signatures:
@@ -119,16 +122,71 @@ func Forge() (string, Signature, error) {
 	fmt.Printf("ok 3: %v\n", Verify(msgslice[2], pub, sig3))
 	fmt.Printf("ok 4: %v\n", Verify(msgslice[3], pub, sig4))
 
-	msgString := "my forged message"
-	var sig Signature
+	messageBlock1 := Block(GetMessageFromString("1"))
+	messageBlock2 := Block(GetMessageFromString("2"))
+	messageBlock3 := Block(GetMessageFromString("3"))
+	messageBlock4 := Block(GetMessageFromString("4"))
 
-	// your code here!
-	// ==
-	// Geordi La
-	// ==
+	var secret SecretKey
 
-	return msgString, sig, nil
+	// construct partial SecretKey from 4 signitures
+	for i := 0; i < 256; i++ {
+		var emptyBlock Block
+		var sigIndexSlice []byte
+		sigIndex1 := messageBlock1[i/8] >> (7 - (i % 8)) & 0x01
+		sigIndex2 := messageBlock2[i/8] >> (7 - (i % 8)) & 0x01
+		sigIndex3 := messageBlock3[i/8] >> (7 - (i % 8)) & 0x01
+		sigIndex4 := messageBlock4[i/8] >> (7 - (i % 8)) & 0x01
+		sigIndexSlice = append(sigIndexSlice, sigIndex1)
+		sigIndexSlice = append(sigIndexSlice, sigIndex2)
+		sigIndexSlice = append(sigIndexSlice, sigIndex3)
+		sigIndexSlice = append(sigIndexSlice, sigIndex4)
 
+		for j, _ := range sigslice {
+			if sigIndexSlice[j] == 1 {
+				if secret.OnePre[i] == emptyBlock {
+					secret.OnePre[i] = sigslice[j].Preimage[i]
+				}
+			} else {
+				if secret.ZeroPre[i] == emptyBlock {
+					secret.ZeroPre[i] = sigslice[j].Preimage[i]
+				}
+			}
+		}
+	}
+
+	// msgString := GetRandomString(30)
+	msgString := "DgA1433qEg 8h21K forge OEgIxlvnjA8NgH"
+	sigTest := Sign(GetMessageFromString(msgString), secret)
+	worked := Verify(GetMessageFromString(msgString), pub, sigTest)
+	count := 0
+	for !worked {
+		msgString = GetRandomString(30)
+		sigTest = Sign(GetMessageFromString(msgString), secret)
+		worked = Verify(GetMessageFromString(msgString), pub, sigTest)
+		if count%10000000 == 0 {
+			fmt.Printf("%d. %s : %t\n", count, msgString, worked)
+		}
+		count++
+	}
+
+	fmt.Printf("Count: %d \n", count)
+
+	return msgString, sigTest, nil
+
+}
+
+const letterBytes = " abcdef ghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456789 "
+
+func GetRandomString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+
+	forgeIndex := rand.Intn(n)
+	randStr := string(b)
+	return randStr[:forgeIndex] + " forge " + randStr[forgeIndex:]
 }
 
 // hint:
